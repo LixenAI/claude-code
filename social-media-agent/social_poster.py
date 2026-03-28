@@ -1,174 +1,149 @@
 """
-Social media posting module.
-Handles posting to Facebook, Instagram (Meta Graph API), and TikTok.
+Social media posting via GoHighLevel Social Planner API.
+GHL already has Facebook, Instagram, and TikTok connected —
+no separate platform credentials needed.
 """
 
 import os
 import requests
+from datetime import datetime, timezone
 
+GHL_API_BASE = "https://services.leadconnectorhq.com"
+GHL_API_VERSION = "2021-07-28"
 
-# --- Meta (Facebook + Instagram) ---
+# Pre-filled GHL social account IDs for Lixen.AI
+ACCOUNT_IDS = {
+    "facebook": os.environ.get(
+        "GHL_FB_ACCOUNT_ID",
+        "698afe7a73eafb1d3b1dee6a_C7e7ReTQ4FXMZp9TjxzU_928531400351443_page",
+    ),
+    "instagram": os.environ.get(
+        "GHL_IG_ACCOUNT_ID",
+        "698afe9ddf13cb8b403358b3_C7e7ReTQ4FXMZp9TjxzU_17841408430198402",
+    ),
+    "tiktok": os.environ.get(
+        "GHL_TIKTOK_ACCOUNT_ID",
+        "698bfa551ce275697c2e8aca_C7e7ReTQ4FXMZp9TjxzU_000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5_business",
+    ),
+}
 
-META_GRAPH_BASE = "https://graph.facebook.com/v19.0"
-
-
-def post_to_facebook(message: str) -> dict:
-    """
-    Post a text update to a Facebook Page.
-    Page: Lixen.AI (ID: 928531400351443)
-    Requires: META_ACCESS_TOKEN, META_PAGE_ID
-    """
-    page_id = os.environ["META_PAGE_ID"]
-    token = os.environ["META_ACCESS_TOKEN"]
-
-    url = f"{META_GRAPH_BASE}/{page_id}/feed"
-    payload = {"message": message, "access_token": token}
-
-    response = requests.post(url, data=payload, timeout=30)
-    response.raise_for_status()
-    result = response.json()
-    print(f"[Facebook] Posted successfully. Post ID: {result.get('id')}")
-    return result
-
-
-def post_to_instagram_caption(caption: str, image_url: str) -> dict:
-    """
-    Post a photo with caption to Instagram Business account.
-    Account: lixen.ai (ID: 17841408430198402)
-    Requires: META_ACCESS_TOKEN, META_IG_USER_ID
-    Requires a publicly accessible image_url (hosted image).
-
-    Two-step process:
-    1. Create a media container
-    2. Publish the container
-    """
-    ig_user_id = os.environ["META_IG_USER_ID"]
-    token = os.environ["META_ACCESS_TOKEN"]
-
-    # Step 1: Create media container
-    container_url = f"{META_GRAPH_BASE}/{ig_user_id}/media"
-    container_payload = {
-        "image_url": image_url,
-        "caption": caption,
-        "access_token": token,
-    }
-    container_resp = requests.post(container_url, data=container_payload, timeout=30)
-    container_resp.raise_for_status()
-    creation_id = container_resp.json()["id"]
-
-    # Step 2: Publish the container
-    publish_url = f"{META_GRAPH_BASE}/{ig_user_id}/media_publish"
-    publish_payload = {"creation_id": creation_id, "access_token": token}
-    publish_resp = requests.post(publish_url, data=publish_payload, timeout=30)
-    publish_resp.raise_for_status()
-    result = publish_resp.json()
-
-    print(f"[Instagram] Posted successfully. Media ID: {result.get('id')}")
-    return result
-
-
-def post_to_instagram_text_only(caption: str) -> dict:
-    """
-    Post a text-only update to Instagram via a Facebook Page
-    (uses the Page's linked Instagram for text posts / stories).
-    For caption-only posts without an image, we post to Facebook
-    which syncs to the linked Instagram account if cross-posting is enabled.
-    """
-    print("[Instagram] Note: Text-only IG posts require an image via the Graph API.")
-    print("[Instagram] Posting caption to Facebook instead (cross-post to IG).")
-    return post_to_facebook(caption)
-
-
-# --- TikTok ---
-
-TIKTOK_BASE = "https://open.tiktokapis.com/v2"
-
-
-def post_to_tiktok_text(text: str) -> dict:
-    """
-    Create a TikTok text post (Direct Post API).
-    Requires: TIKTOK_ACCESS_TOKEN, TIKTOK_OPEN_ID
-
-    Account: LixenAI | AI Agent Service ✨
-    Open ID: 000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5
-
-    TikTok Content Posting API — text posts (Business accounts).
-    Docs: https://developers.tiktok.com/doc/content-posting-api-get-started
-    """
-    token = os.environ["TIKTOK_ACCESS_TOKEN"]
-    open_id = os.environ.get("TIKTOK_OPEN_ID", "000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5")
-
-    url = f"{TIKTOK_BASE}/post/publish/text/init/"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json; charset=UTF-8",
-    }
-    payload = {
-        "post_info": {
-            "title": text[:150],  # TikTok caption max 150 chars for text posts
-            "privacy_level": "PUBLIC_TO_EVERYONE",
-            "disable_duet": False,
-            "disable_comment": False,
-            "disable_stitch": False,
-        },
-        "source_info": {
-            "source": "PULL_FROM_URL",
-        },
-        "open_id": open_id,
-    }
-
-    response = requests.post(url, json=payload, headers=headers, timeout=30)
-    response.raise_for_status()
-    result = response.json()
-    print(f"[TikTok] Post initiated. Publish ID: {result.get('data', {}).get('publish_id')}")
-    return result
-
-
-# --- Dispatcher ---
-
-PLATFORM_HANDLERS = {
-    "facebook": post_to_facebook,
-    "instagram": post_to_instagram_text_only,
-    "tiktok": post_to_tiktok_text,
+PLATFORM_LABELS = {
+    "facebook": "Facebook — Lixen.AI (928531400351443)",
+    "instagram": "Instagram — lixen.ai (17841408430198402)",
+    "tiktok": "TikTok — LixenAI | AI Agent Service ✨",
 }
 
 
-def post_content(platform: str, content: str, image_url: str = None) -> dict:
+def _ghl_headers() -> dict:
+    return {
+        "Authorization": f"Bearer {os.environ['GHL_API_KEY']}",
+        "Version": GHL_API_VERSION,
+        "Content-Type": "application/json",
+    }
+
+
+def post_to_ghl(
+    body: str,
+    platforms: list[str],
+    schedule_date: str = None,
+    media_urls: list[str] = None,
+) -> dict:
     """
-    Route content to the correct platform poster.
+    Create a social media post via GHL Social Planner.
 
     Args:
-        platform: "facebook", "instagram", or "tiktok"
-        content: The caption/body text to post
-        image_url: Optional public image URL (required for IG photo posts)
+        body: Post text/caption
+        platforms: List of platforms — any of: "facebook", "instagram", "tiktok"
+        schedule_date: ISO 8601 string to schedule (e.g. "2024-12-01T09:00:00.000Z").
+                       None = post immediately (status: "published")
+        media_urls: Optional list of public media URLs to attach
+
+    Returns:
+        GHL API response dict
     """
-    platform = platform.lower().strip()
+    location_id = os.environ["GHL_LOCATION_ID"]
+    url = f"{GHL_API_BASE}/social-media-posting/location/{location_id}/posts"
 
-    if platform == "instagram" and image_url:
-        return post_to_instagram_caption(content, image_url)
+    account_ids = []
+    for platform in platforms:
+        platform = platform.lower().strip()
+        account_id = ACCOUNT_IDS.get(platform)
+        if account_id:
+            account_ids.append(account_id)
+        else:
+            print(f"  [GHL] Warning: unknown platform '{platform}', skipping")
 
-    handler = PLATFORM_HANDLERS.get(platform)
-    if not handler:
-        raise ValueError(f"Unknown platform: {platform}. Choose: facebook, instagram, tiktok")
+    if not account_ids:
+        raise ValueError(f"No valid platform account IDs resolved from: {platforms}")
 
-    return handler(content)
+    status = "scheduled" if schedule_date else "published"
+
+    payload = {
+        "accountIds": account_ids,
+        "post": {
+            "body": body,
+            "status": status,
+        },
+    }
+
+    if schedule_date:
+        payload["scheduleDate"] = schedule_date
+
+    if media_urls:
+        payload["post"]["mediaUrls"] = media_urls
+
+    response = requests.post(url, json=payload, headers=_ghl_headers(), timeout=30)
+    response.raise_for_status()
+    result = response.json()
+
+    platform_labels = [PLATFORM_LABELS.get(p.lower(), p) for p in platforms]
+    print(f"  [GHL] Posted to: {', '.join(platform_labels)}")
+    print(f"  [GHL] Status: {status} | Post ID: {result.get('id', result.get('_id', 'N/A'))}")
+    return result
+
+
+def post_content(platform: str, content: str, image_url: str = None) -> dict:
+    """Post to a single platform via GHL."""
+    media = [image_url] if image_url else None
+    return post_to_ghl(body=content, platforms=[platform], media_urls=media)
 
 
 def post_to_all_platforms(content: str, image_url: str = None) -> dict:
-    """Post the same content to all three platforms."""
-    results = {}
-    for platform in ["facebook", "instagram", "tiktok"]:
-        try:
-            results[platform] = post_content(platform, content, image_url)
-        except Exception as e:
-            print(f"[{platform.capitalize()}] Error: {e}")
-            results[platform] = {"error": str(e)}
-    return results
+    """Post the same content to Facebook, Instagram, and TikTok via GHL."""
+    return post_to_ghl(
+        body=content,
+        platforms=["facebook", "instagram", "tiktok"],
+        media_urls=[image_url] if image_url else None,
+    )
+
+
+def schedule_post(
+    content: str,
+    platforms: list[str],
+    schedule_date: str,
+    image_url: str = None,
+) -> dict:
+    """
+    Schedule a post for a future date via GHL Social Planner.
+
+    Args:
+        content: Post caption/body
+        platforms: ["facebook", "instagram", "tiktok"] or subset
+        schedule_date: ISO 8601 e.g. "2024-12-02T09:00:00.000Z"
+        image_url: Optional media URL
+    """
+    return post_to_ghl(
+        body=content,
+        platforms=platforms,
+        schedule_date=schedule_date,
+        media_urls=[image_url] if image_url else None,
+    )
 
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
+
     test_caption = (
         "Your front desk just clocked out.\n\n"
         "Your AI one never will.\n\n"
@@ -176,4 +151,7 @@ if __name__ == "__main__":
         "DM us 'AUDIT' to see what you're missing.\n\n"
         "#MedSpa #AIFrontDesk #BookingAutomation #MedSpaMarketing"
     )
-    post_content("facebook", test_caption)
+
+    print("Testing GHL Social Planner post (Facebook only)...\n")
+    result = post_content("facebook", test_caption)
+    print(result)
