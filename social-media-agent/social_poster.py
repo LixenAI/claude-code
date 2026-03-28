@@ -15,6 +15,7 @@ META_GRAPH_BASE = "https://graph.facebook.com/v19.0"
 def post_to_facebook(message: str) -> dict:
     """
     Post a text update to a Facebook Page.
+    Page: Lixen.AI (ID: 928531400351443)
     Requires: META_ACCESS_TOKEN, META_PAGE_ID
     """
     page_id = os.environ["META_PAGE_ID"]
@@ -33,6 +34,7 @@ def post_to_facebook(message: str) -> dict:
 def post_to_instagram_caption(caption: str, image_url: str) -> dict:
     """
     Post a photo with caption to Instagram Business account.
+    Account: lixen.ai (ID: 17841408430198402)
     Requires: META_ACCESS_TOKEN, META_IG_USER_ID
     Requires a publicly accessible image_url (hosted image).
 
@@ -85,11 +87,16 @@ TIKTOK_BASE = "https://open.tiktokapis.com/v2"
 def post_to_tiktok_text(text: str) -> dict:
     """
     Create a TikTok text post (Direct Post API).
-    Requires: TIKTOK_ACCESS_TOKEN
+    Requires: TIKTOK_ACCESS_TOKEN, TIKTOK_OPEN_ID
 
-    TikTok Content Posting API — text posts (Creator Marketplace / Business accounts).
+    Account: LixenAI | AI Agent Service ✨
+    Open ID: 000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5
+
+    TikTok Content Posting API — text posts (Business accounts).
+    Docs: https://developers.tiktok.com/doc/content-posting-api-get-started
     """
     token = os.environ["TIKTOK_ACCESS_TOKEN"]
+    open_id = os.environ.get("TIKTOK_OPEN_ID", "000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5")
 
     url = f"{TIKTOK_BASE}/post/publish/text/init/"
     headers = {
@@ -98,7 +105,7 @@ def post_to_tiktok_text(text: str) -> dict:
     }
     payload = {
         "post_info": {
-            "title": text[:150],  # TikTok title max 150 chars
+            "title": text[:150],  # TikTok caption max 150 chars for text posts
             "privacy_level": "PUBLIC_TO_EVERYONE",
             "disable_duet": False,
             "disable_comment": False,
@@ -107,6 +114,7 @@ def post_to_tiktok_text(text: str) -> dict:
         "source_info": {
             "source": "PULL_FROM_URL",
         },
+        "open_id": open_id,
     }
 
     response = requests.post(url, json=payload, headers=headers, timeout=30)
