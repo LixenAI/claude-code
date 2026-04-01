@@ -1,12 +1,17 @@
 """
-Lixen.AI Design Library — maps (category, platform) → list of Canva export URLs.
+Lixen.AI Design Library — maps (category, platform) → list of image URLs.
 
-⚠️  URL EXPIRY: Canva signed export URLs expire ~18-24 hours after generation.
-    To refresh expired URLs, run: python canva_generator.py --re-export
-    Or export manually from Canva using the design IDs in CANVA_DESIGN_IDS below.
+Permanent URLs are hosted on GHL CDN (assets.cdn.filesafe.space) — no expiry.
+Canva design IDs for re-export are in CANVA_DESIGN_IDS below.
 
-    For permanent URLs: download the JPGs and re-upload to Cloudflare R2 / S3,
-    then replace the entries here with your CDN URLs.
+To add more images after exporting from Canva:
+  1. Run:  python media_uploader.py  (downloads Canva URLs, uploads to GHL CDN)
+  2. Paste the printed permanent URLs into DESIGNS below.
+
+To re-export all designs from Canva (requires CANVA_API_TOKEN in .env):
+  python canva_generator.py --re-export pain_instagram
+  python canva_generator.py --re-export education_facebook
+  ... etc, then run media_uploader.py immediately after.
 
 Designs generated: 2026-04-01 | Brand kit: kAG7Nh5iE2c (RennXAI Studio)
 """
@@ -25,56 +30,45 @@ CATEGORY_ALIASES: dict[str, str] = {
 }
 
 # ── Design URL Library ────────────────────────────────────────────────────────
-# Each entry is a list of URLs so get_design_url() can rotate through variants.
-# Canva design IDs are stored in CANVA_DESIGN_IDS below for re-export.
+# Permanent GHL CDN URLs (assets.cdn.filesafe.space) never expire.
+# Empty lists = no image yet — posts fall back to text-only gracefully.
 
 DESIGNS: dict[tuple[str, str], list[str]] = {
     # ── Pain Agitation ────────────────────────────────────────────────────────
-    ("pain", "instagram"): [
-        # DAHFnLNKe04 — "Instagram Post - Every Missed Call"
-        "https://export-download.canva.com/NKe04/DAHFnLNKe04/-1/0/0001-4734907859747627840.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T194206Z&X-Amz-Expires=64438&X-Amz-Signature=f991cbacb72b661fdbb4459f4db857b19a7a1b2105bb69e8990db4388cd51eef&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A36%3A04%20GMT",
-        # DAHFnMJ_rmc — "Instagram Post - Every Missed Call Is A Missed Booking"
-        "https://export-download.canva.com/J_rmc/DAHFnMJ_rmc/-1/0/0001-4572778270711675598.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T080916Z&X-Amz-Expires=19814&X-Amz-Signature=3c0d0e2f3a9c0229f98a033d92a6b3a8f5e217f1dba1c4f14c517fc230a6ce9d&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A39%3A30%20GMT",
-        # DAHFnA4DAgc — "Instagram Post - Every Missed Call Is A Missed Booking" (v4)
-        "https://export-download.canva.com/4DAgc/DAHFnA4DAgc/-1/0/0001-5454357898741564586.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T015937Z&X-Amz-Expires=42210&X-Amz-Signature=7252d8f50d257b4da72196f3560c3c3027088140ef84940a1329c93aecf1899c&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A43%3A07%20GMT",
-    ],
-    ("pain", "facebook"):  [],  # reuse instagram — handled by fallback in get_design_url
-    ("pain", "tiktok"):    [],  # reuse instagram — handled by fallback
+    # TODO: re-export DAHFnLNKe04/DAHFnMJ_rmc/DAHFnA4DAgc then run media_uploader.py
+    ("pain", "instagram"): [],
+    ("pain", "facebook"):  [],
+    ("pain", "tiktok"):    [],
 
     # ── Education ─────────────────────────────────────────────────────────────
     ("education", "facebook"): [
-        # DAHFnERvR58 — "Facebook Post - AI Front Desk Solutions"
-        "https://export-download.canva.com/RvR58/DAHFnERvR58/-1/0/0001-2278194260842326663.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T074513Z&X-Amz-Expires=20731&X-Amz-Signature=242537183b44b661160c953de9db7d86150bc5fe29bc6a0cc8431a43bde255b1&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A30%3A44%20GMT",
-        # DAHFnPT5_uE — "Facebook Post - How AI Enhances Your Front Desk"
-        "https://export-download.canva.com/T5_uE/DAHFnPT5_uE/-1/0/0001-3323029375991390667.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T093626Z&X-Amz-Expires=15171&X-Amz-Signature=8d8d0fb709fd7866510accb174b3548f76f282d9fedf746c9a7090c9a2cd0d88&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A49%3A17%20GMT",
-        # DAHFnNU52sQ — "Facebook Post - How AI Handles Your Front Desk"
-        "https://export-download.canva.com/U52sQ/DAHFnNU52sQ/-1/0/0001-676038693658310113.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T114424Z&X-Amz-Expires=6933&X-Amz-Signature=611dfb85470a07516290c1795ff4806e2942662094c228ce40f7948a3999bd47&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A39%3A57%20GMT",
+        # DAHFnPT5_uE — "How AI Enhances Your Front Desk" (permanent GHL CDN)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1cbb11e4-f1d4-4436-b7f0-5eee99f7e360.jpg",
+        # TODO: re-export DAHFnERvR58 + DAHFnNU52sQ and run media_uploader.py for more variants
     ],
-    ("education", "instagram"): [],  # reuse facebook variant — handled by fallback
+    ("education", "instagram"): [],  # reuse facebook — handled by fallback
     ("education", "tiktok"):    [],
 
     # ── Social Proof ──────────────────────────────────────────────────────────
     ("proof", "instagram"): [
-        # DAHFnD1qsKU — "Instagram Post - Transforming Communication"
-        "https://export-download.canva.com/1qsKU/DAHFnD1qsKU/-1/0/0001-197531235298946914.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T235203Z&X-Amz-Expires=50485&X-Amz-Signature=598d1b067880d4289c4f584e8f9d916bc0b644aee921facde5b94dafb091c927&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A53%3A28%20GMT",
+        # DAHFnD1qsKU — "Transforming Communication" (permanent GHL CDN)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/fd2c76d4-cbc2-41aa-b9b9-5d4a87bbdca1.jpg",
+        # TODO: re-export DAHFnNXejyM/DAHFnMS7Jjw/DAHFnLZ3j6Q and run media_uploader.py
     ],
     ("proof", "facebook"): [],  # reuse instagram — handled by fallback
     ("proof", "tiktok"):   [],
 
     # ── Offer ─────────────────────────────────────────────────────────────────
-    ("offer", "instagram"): [
-        # DAHFnNQ5qCo — "Your Story - Unlock Your Potential"
-        "https://export-download.canva.com/Q5qCo/DAHFnNQ5qCo/-1/0/0001-5127846928036691178.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T232246Z&X-Amz-Expires=51516&X-Amz-Signature=df17c42936b7a43a1abc19b5e2b853c15146187bca061229aaf8e2acb6aadf02&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A41%3A22%20GMT",
-        # DAHFnK_uyXY — "Your Story - Book Your Free Audit"
-        "https://export-download.canva.com/_uyXY/DAHFnK_uyXY/-1/0/0001-8693571931490947491.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260401%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260401T054423Z&X-Amz-Expires=27333&X-Amz-Signature=dd41f615d180cb4f37b3fd01941339d475fde2b973edec7287a5b00f66e511bd&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A19%3A56%20GMT",
-    ],
-    ("offer", "facebook"): [],  # reuse instagram story — handled by fallback
-    ("offer", "tiktok"):   [],
+    # TODO: re-export DAHFnNQ5qCo/DAHFnK_uyXY then run media_uploader.py
+    ("offer", "instagram"): [],
+    ("offer", "facebook"):  [],
+    ("offer", "tiktok"):    [],
 
     # ── Engagement ────────────────────────────────────────────────────────────
     ("engagement", "instagram"): [
-        # DAHFnASCh7I — "Instagram Post - Missed Calls?"
-        "https://export-download.canva.com/SCh7I/DAHFnASCh7I/-1/0/0001-197531233651858146.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T152419Z&X-Amz-Expires=82502&X-Amz-Signature=44d11fa25301101d7abe2416228202f9c0dec525e54fa86027c41060fa1377bb&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2014%3A19%3A21%20GMT",
+        # DAHFnASCh7I — "Missed Calls?" (permanent GHL CDN)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/a85ceb48-1289-4be4-916a-41538c2069f2.jpg",
+        # TODO: re-export DAHFnAI16O4/DAHFnDXTe6g/DAHFnDfe438 and run media_uploader.py
     ],
     ("engagement", "facebook"): [],  # reuse instagram — handled by fallback
     ("engagement", "tiktok"):   [],
