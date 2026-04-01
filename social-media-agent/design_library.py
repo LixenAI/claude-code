@@ -35,40 +35,55 @@ CATEGORY_ALIASES: dict[str, str] = {
 
 DESIGNS: dict[tuple[str, str], list[str]] = {
     # ── Pain Agitation ────────────────────────────────────────────────────────
-    # TODO: re-export DAHFnLNKe04/DAHFnMJ_rmc/DAHFnA4DAgc then run media_uploader.py
-    ("pain", "instagram"): [],
-    ("pain", "facebook"):  [],
-    ("pain", "tiktok"):    [],
+    ("pain", "instagram"): [
+        # DAHFnLNKe04 — Every Missed Call
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/4237474b-419e-412a-9ad6-b5d1a7d885aa.jpg",
+        # DAHFnMJ_rmc — Every Missed Call Is A Missed Booking
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1790c099-28d8-4817-a18b-cb8b035899a9.jpg",
+        # DAHFnA4DAgc — Every Missed Call (alt)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/c6ebf7a2-9e1d-429b-b56b-f07dcbd3290c.jpg",
+    ],
+    ("pain", "facebook"): [],  # reuse instagram — handled by fallback
+    ("pain", "tiktok"):   [],  # reuse instagram — handled by fallback
 
     # ── Education ─────────────────────────────────────────────────────────────
     ("education", "facebook"): [
-        # DAHFnPT5_uE — "How AI Enhances Your Front Desk" (permanent GHL CDN)
+        # DAHFnERvR58 — AI Front Desk Solutions
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/95840971-427c-4d64-af25-a34ec146608f.jpg",
+        # DAHFnPT5_uE — How AI Enhances Your Front Desk
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1cbb11e4-f1d4-4436-b7f0-5eee99f7e360.jpg",
-        # TODO: re-export DAHFnERvR58 + DAHFnNU52sQ and run media_uploader.py for more variants
+        # DAHFnNU52sQ — How AI Handles Your Front Desk
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/e253d0d1-b5a2-49a4-9f78-80c670cd5966.jpg",
     ],
     ("education", "instagram"): [],  # reuse facebook — handled by fallback
     ("education", "tiktok"):    [],
 
     # ── Social Proof ──────────────────────────────────────────────────────────
     ("proof", "instagram"): [
-        # DAHFnD1qsKU — "Transforming Communication" (permanent GHL CDN)
+        # DAHFnNXejyM — Zero Missed Calls
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/fc360560-57e2-4562-a11c-9315473ce587.jpg",
+        # DAHFnD1qsKU — Transforming Communication
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/fd2c76d4-cbc2-41aa-b9b9-5d4a87bbdca1.jpg",
-        # TODO: re-export DAHFnNXejyM/DAHFnMS7Jjw/DAHFnLZ3j6Q and run media_uploader.py
     ],
     ("proof", "facebook"): [],  # reuse instagram — handled by fallback
     ("proof", "tiktok"):   [],
 
     # ── Offer ─────────────────────────────────────────────────────────────────
-    # TODO: re-export DAHFnNQ5qCo/DAHFnK_uyXY then run media_uploader.py
-    ("offer", "instagram"): [],
-    ("offer", "facebook"):  [],
-    ("offer", "tiktok"):    [],
+    ("offer", "instagram"): [
+        # DAHFnNQ5qCo — Unlock Your Potential (story)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/9a5e149e-7e6f-4c5e-b372-6078f5331ee0.jpg",
+        # DAHFnK_uyXY — Book Your Free Audit (story)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/76b65fca-0be6-49f2-a42c-14e78fb9b71e.jpg",
+    ],
+    ("offer", "facebook"): [],  # reuse instagram — handled by fallback
+    ("offer", "tiktok"):   [],
 
     # ── Engagement ────────────────────────────────────────────────────────────
     ("engagement", "instagram"): [
-        # DAHFnASCh7I — "Missed Calls?" (permanent GHL CDN)
+        # DAHFnASCh7I — Missed Calls?
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/a85ceb48-1289-4be4-916a-41538c2069f2.jpg",
-        # TODO: re-export DAHFnAI16O4/DAHFnDXTe6g/DAHFnDfe438 and run media_uploader.py
+        # DAHFnAI16O4 — Missed Calls Poll
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/2084e702-f878-4d54-8eb5-c591e80f4778.jpg",
     ],
     ("engagement", "facebook"): [],  # reuse instagram — handled by fallback
     ("engagement", "tiktok"):   [],
