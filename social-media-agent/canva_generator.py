@@ -29,8 +29,11 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Bottom CTA: 'DM AUDIT' in gold pill button. "
             "Instagram square 1080×1080. Minimal luxury aesthetic."
         ),
-        "format": "Instagram Post (Square)",
-        "design_ids": ["dg-09578935", "dg-7c3a92b0", "dg-89f3b024", "dg-bce3254c"],
+        "canva_type": "instagram_post",
+        "export_width": 1080,
+        "export_height": 1080,
+        # Saved design IDs in Canva account (re-export any of these)
+        "design_ids": ["DAHFnLNKe04", "DAHFnMJ_rmc", "DAHFnLndafM", "DAHFnA4DAgc"],
     },
     "education_facebook": {
         "title": "Education — Facebook Post",
@@ -38,12 +41,14 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Lixen.AI AI front desk explainer. Dark luxury #1A1A2E background. "
             "Headline: 'How AI Answers Your Calls, Books Appointments & Replies to DMs — 24/7.' "
             "3-step visual: 1. AI Answers → 2. Books Appointment → 3. You Get Paid. "
-            "Gold step numbers. Clean sans-serif. Facebook 1200×628 landscape."
+            "Gold step numbers. Clean sans-serif. Facebook 1200×630 landscape."
         ),
-        "format": "Facebook Post (Landscape)",
-        "design_ids": ["dg-0ad72fd6", "dg-68c99ece", "dg-8c052972", "dg-cee92b87"],
+        "canva_type": "facebook_post",
+        "export_width": 1200,
+        "export_height": 630,
+        "design_ids": ["DAHFnERvR58", "DAHFnCv6O4M", "DAHFnPT5_uE", "DAHFnNU52sQ"],
     },
-    "offer_instagram_story": {
+    "offer_story": {
         "title": "Offer — Instagram Story",
         "prompt": (
             "Lixen.AI free AI audit offer. Full bleed dark background. "
@@ -52,8 +57,10 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Urgency line: 'Limited spots this month.' "
             "CTA button: 'DM AUDIT' gold pill. Instagram Story 1080×1920."
         ),
-        "format": "Instagram Story",
-        "design_ids": ["dg-4ab30ccd", "dg-4ded80d7", "dg-66259ea4", "dg-9790a262"],
+        "canva_type": "your_story",
+        "export_width": 1080,
+        "export_height": 1920,
+        "design_ids": ["DAHFnNQ5qCo", "DAHFnKpPHmU", "DAHFnHsp2dg", "DAHFnK_uyXY"],
     },
     "proof_instagram": {
         "title": "Social Proof — Instagram Post",
@@ -64,8 +71,10 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Bottom: Lixen.AI logo + 'AI Operating System for Med Spas'. "
             "Instagram square 1080×1080."
         ),
-        "format": "Instagram Post (Square)",
-        "design_ids": [],  # not yet generated — run generate-design to create
+        "canva_type": "instagram_post",
+        "export_width": 1080,
+        "export_height": 1080,
+        "design_ids": [],  # not yet generated
     },
     "engagement_instagram": {
         "title": "Engagement — Instagram Post",
@@ -76,7 +85,9 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Subtext: 'Comment your number below 👇' "
             "Instagram square 1080×1080. Warm luxury feel."
         ),
-        "format": "Instagram Post (Square)",
+        "canva_type": "instagram_post",
+        "export_width": 1080,
+        "export_height": 1080,
         "design_ids": [],  # not yet generated
     },
     "pain_tiktok": {
@@ -87,7 +98,9 @@ GENERATION_PROMPTS: dict[str, dict] = {
             "Center: phone ringing animation placeholder or static missed call screen. "
             "Bottom gold text: 'There's a fix for that. → lixen.ai'"
         ),
-        "format": "TikTok Video Cover",
+        "canva_type": "your_story",
+        "export_width": 1080,
+        "export_height": 1920,
         "design_ids": [],  # not yet generated
     },
 }
@@ -100,9 +113,8 @@ def print_generation_guide():
     for key, cfg in GENERATION_PROMPTS.items():
         print(f"[{key}]")
         print(f"  Title:  {cfg['title']}")
-        print(f"  Format: {cfg['format']}")
         if cfg["design_ids"]:
-            print(f"  Existing IDs: {', '.join(cfg['design_ids'])}")
+            print(f"  Saved IDs: {', '.join(cfg['design_ids'])}")
         else:
             print("  Status: needs generation")
         print(f"  Prompt: {cfg['prompt'][:100]}...")
@@ -110,4 +122,32 @@ def print_generation_guide():
 
 
 if __name__ == "__main__":
-    print_generation_guide()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Re-export Canva designs to refresh URLs")
+    parser.add_argument(
+        "--re-export",
+        metavar="CATEGORY",
+        choices=list(GENERATION_PROMPTS.keys()),
+        help="Re-export all saved designs for a category (e.g. pain_instagram)",
+    )
+    parser.add_argument("--design-id", metavar="ID", help="Export a single design ID")
+    parser.add_argument("--format", default="instagram_post", choices=list(DESIGN_SPECS.keys()))
+    args = parser.parse_args()
+
+    if args.re_export:
+        cfg = GENERATION_PROMPTS[args.re_export]
+        ids = cfg["design_ids"]
+        if not ids:
+            print(f"No saved design IDs for '{args.re_export}'. Generate in a Claude+Canva MCP session first.")
+        else:
+            print(f"Re-exporting {len(ids)} designs for {args.re_export}...")
+            for did in ids:
+                url = export_existing_design(did, width=cfg["export_width"], height=cfg["export_height"])
+                print(f"  {did}: {url or 'FAILED'}")
+    elif args.design_id:
+        spec = DESIGN_SPECS[args.format]
+        url = export_existing_design(args.design_id, width=spec["width"], height=spec["height"])
+        print(f"\nDownload URL:\n{url}" if url else "Export failed.")
+    else:
+        print_generation_guide()
