@@ -2,16 +2,19 @@
 Social media posting via GoHighLevel Social Planner API.
 GHL already has Facebook, Instagram, and TikTok connected —
 no separate platform credentials needed.
+
+Verified payload format (tested live 2026-04-01):
+  POST /social-media-posting/{locationId}/posts
+  Body: { accountIds, type, media, userId, summary, status, scheduleDate }
 """
 
 import os
 import requests
-from datetime import datetime, timezone
 
 GHL_API_BASE = "https://services.leadconnectorhq.com"
 GHL_API_VERSION = "2021-07-28"
 
-# Pre-filled GHL social account IDs for Lixen.AI
+# Verified GHL Social Account IDs for Lixen.AI
 ACCOUNT_IDS = {
     "facebook": os.environ.get(
         "GHL_FB_ACCOUNT_ID",
@@ -28,8 +31,8 @@ ACCOUNT_IDS = {
 }
 
 PLATFORM_LABELS = {
-    "facebook": "Facebook — Lixen.AI (928531400351443)",
-    "instagram": "Instagram — lixen.ai (17841408430198402)",
+    "facebook": "Facebook — Lixen.AI",
+    "instagram": "Instagram — lixen.ai",
     "tiktok": "TikTok — LixenAI | AI Agent Service ✨",
 }
 
@@ -45,29 +48,32 @@ def _ghl_headers() -> dict:
 def post_to_ghl(
     body: str,
     platforms: list[str],
+    post_type: str = "post",
     schedule_date: str = None,
-    media_urls: list[str] = None,
+    media: list[dict] = None,
 ) -> dict:
     """
     Create a social media post via GHL Social Planner.
 
     Args:
-        body: Post text/caption
-        platforms: List of platforms — any of: "facebook", "instagram", "tiktok"
-        schedule_date: ISO 8601 string to schedule (e.g. "2024-12-01T09:00:00.000Z").
-                       None = post immediately (status: "published")
-        media_urls: Optional list of public media URLs to attach
+        body: Post caption / text content (maps to GHL 'summary' field)
+        platforms: Any of: "facebook", "instagram", "tiktok"
+        post_type: "post" | "story" | "reel"  (default: "post")
+        schedule_date: ISO 8601 string for scheduling, e.g. "2026-05-01T09:00:00.000Z"
+                       None = publish immediately (status: "published")
+        media: List of GHL media objects, e.g. [{"url": "...", "type": "image"}]
+               Empty list = text-only post
 
     Returns:
-        GHL API response dict
+        GHL API response dict with post ID inside results.post._id
     """
     location_id = os.environ["GHL_LOCATION_ID"]
-    url = f"{GHL_API_BASE}/social-media-posting/location/{location_id}/posts"
+    user_id = os.environ.get("GHL_USER_ID", "n0VuVK7uRZWSsQRZDLa8")
+    url = f"{GHL_API_BASE}/social-media-posting/{location_id}/posts"
 
     account_ids = []
     for platform in platforms:
-        platform = platform.lower().strip()
-        account_id = ACCOUNT_IDS.get(platform)
+        account_id = ACCOUNT_IDS.get(platform.lower().strip())
         if account_id:
             account_ids.append(account_id)
         else:
@@ -80,40 +86,41 @@ def post_to_ghl(
 
     payload = {
         "accountIds": account_ids,
-        "post": {
-            "body": body,
-            "status": status,
-        },
+        "type": post_type,
+        "media": media or [],
+        "userId": user_id,
+        "summary": body,
+        "status": status,
     }
 
     if schedule_date:
         payload["scheduleDate"] = schedule_date
 
-    if media_urls:
-        payload["post"]["mediaUrls"] = media_urls
-
     response = requests.post(url, json=payload, headers=_ghl_headers(), timeout=30)
     response.raise_for_status()
     result = response.json()
 
+    post_data = result.get("results", {}).get("post", result.get("results", {}))
+    post_id = post_data.get("_id", result.get("id", result.get("traceId", "OK")))
     platform_labels = [PLATFORM_LABELS.get(p.lower(), p) for p in platforms]
-    print(f"  [GHL] Posted to: {', '.join(platform_labels)}")
-    print(f"  [GHL] Status: {status} | Post ID: {result.get('id', result.get('_id', 'N/A'))}")
+    print(f"  [GHL ✓] {', '.join(platform_labels)}")
+    print(f"          Status: {status} | Post ID: {post_id}")
     return result
 
 
 def post_content(platform: str, content: str, image_url: str = None) -> dict:
     """Post to a single platform via GHL."""
-    media = [image_url] if image_url else None
-    return post_to_ghl(body=content, platforms=[platform], media_urls=media)
+    media = [{"url": image_url, "type": "image"}] if image_url else []
+    return post_to_ghl(body=content, platforms=[platform], media=media)
 
 
 def post_to_all_platforms(content: str, image_url: str = None) -> dict:
     """Post the same content to Facebook, Instagram, and TikTok via GHL."""
+    media = [{"url": image_url, "type": "image"}] if image_url else []
     return post_to_ghl(
         body=content,
         platforms=["facebook", "instagram", "tiktok"],
-        media_urls=[image_url] if image_url else None,
+        media=media,
     )
 
 
@@ -121,6 +128,7 @@ def schedule_post(
     content: str,
     platforms: list[str],
     schedule_date: str,
+    post_type: str = "post",
     image_url: str = None,
 ) -> dict:
     """
@@ -129,14 +137,17 @@ def schedule_post(
     Args:
         content: Post caption/body
         platforms: ["facebook", "instagram", "tiktok"] or subset
-        schedule_date: ISO 8601 e.g. "2024-12-02T09:00:00.000Z"
-        image_url: Optional media URL
+        schedule_date: ISO 8601 e.g. "2026-05-01T09:00:00.000Z"
+        post_type: "post" | "story" | "reel"
+        image_url: Optional public media URL
     """
+    media = [{"url": image_url, "type": "image"}] if image_url else []
     return post_to_ghl(
         body=content,
         platforms=platforms,
+        post_type=post_type,
         schedule_date=schedule_date,
-        media_urls=[image_url] if image_url else None,
+        media=media,
     )
 
 
@@ -148,10 +159,10 @@ if __name__ == "__main__":
         "Your front desk just clocked out.\n\n"
         "Your AI one never will.\n\n"
         "Lixen.AI answers calls, replies to DMs, and books appointments — 24/7.\n\n"
-        "DM us 'AUDIT' to see what you're missing.\n\n"
+        'DM us "AUDIT" to see what you\'re missing.\n\n'
         "#MedSpa #AIFrontDesk #BookingAutomation #MedSpaMarketing"
     )
 
-    print("Testing GHL Social Planner post (Facebook only)...\n")
+    print("Posting test caption to Facebook via GHL Social Planner...\n")
     result = post_content("facebook", test_caption)
     print(result)

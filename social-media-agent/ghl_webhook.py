@@ -120,7 +120,8 @@ def _post_via_ghl(body: str, platforms: list[str], media_urls: list[str] = None)
     }
 
     location_id = os.environ["GHL_LOCATION_ID"]
-    url = f"{GHL_API_BASE}/social-media-posting/location/{location_id}/posts"
+    user_id = os.environ.get("GHL_USER_ID", "n0VuVK7uRZWSsQRZDLa8")
+    url = f"{GHL_API_BASE}/social-media-posting/{location_id}/posts"
     headers = {
         "Authorization": f"Bearer {os.environ['GHL_API_KEY']}",
         "Version": GHL_API_VERSION,
@@ -128,12 +129,15 @@ def _post_via_ghl(body: str, platforms: list[str], media_urls: list[str] = None)
     }
 
     account_ids = [ACCOUNT_IDS[p.lower()] for p in platforms if p.lower() in ACCOUNT_IDS]
+    media = [{"url": u, "type": "image"} for u in media_urls] if media_urls else []
     payload = {
         "accountIds": account_ids,
-        "post": {"body": body, "status": "published"},
+        "type": "post",
+        "media": media,
+        "userId": user_id,
+        "summary": body,
+        "status": "published",
     }
-    if media_urls:
-        payload["post"]["mediaUrls"] = media_urls
 
     response = req.post(url, json=payload, headers=headers, timeout=30)
     response.raise_for_status()

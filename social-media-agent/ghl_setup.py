@@ -61,15 +61,11 @@ def verify_connection() -> dict:
 
 def list_social_accounts() -> list:
     print("\n2. Checking connected social accounts...")
-    url = f"{GHL_API_BASE}/social-media-posting/location/{LOCATION_ID}/accounts"
+    url = f"{GHL_API_BASE}/social-media-posting/{LOCATION_ID}/accounts"
     resp = requests.get(url, headers=_headers(), timeout=15)
 
-    if resp.status_code == 404:
-        print("   ! Social Planner API not available for this account tier.")
-        return []
-
     resp.raise_for_status()
-    accounts = resp.json().get("accounts", resp.json() if isinstance(resp.json(), list) else [])
+    accounts = resp.json().get("results", {}).get("accounts", [])
 
     expected = {
         "698afe7a73eafb1d3b1dee6a_C7e7ReTQ4FXMZp9TjxzU_928531400351443_page": "Facebook — Lixen.AI",
