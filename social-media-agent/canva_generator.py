@@ -11,13 +11,32 @@ Brand Kit: kAG7Nh5iE2c  (RennXAI Studio)
 
 ── How to regenerate designs in a new Claude Code session ──────────────────
 1. Ask Claude to use mcp__canva__generate-design with the prompts below
-2. Export each via mcp__canva__export-design (format: "png")
-3. Copy the export URL into design_library.py
+2. Export each via mcp__canva__export-design (format: "jpg")
+3. Run: python media_uploader.py  to upload to GHL CDN permanently
+4. Paste the printed permanent URLs into design_library.py
 
-── Generation prompts per category ─────────────────────────────────────────
+── REST API re-export (requires CANVA_API_TOKEN in .env) ───────────────────
+python canva_generator.py --re-export pain_instagram
+python canva_generator.py --design-id DAHFnLNKe04 --format instagram_post
 """
 
+import os
+import time
+import requests
+from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
 BRAND_KIT_ID = "kAG7Nh5iE2c"
+CANVA_API_BASE = "https://api.canva.com/rest/v1"
+
+DESIGN_SPECS: dict[str, dict] = {
+    "instagram_post": {"width": 1080, "height": 1080},
+    "facebook_post":  {"width": 1200, "height": 630},
+    "story":          {"width": 1080, "height": 1920},
+    "tiktok_post":    {"width": 1080, "height": 1920},
+}
 
 GENERATION_PROMPTS: dict[str, dict] = {
     "pain_instagram": {
@@ -104,6 +123,68 @@ GENERATION_PROMPTS: dict[str, dict] = {
         "design_ids": [],  # not yet generated
     },
 }
+
+
+def export_existing_design(
+    design_id: str,
+    width: int = 1080,
+    height: int = 1080,
+    fmt: str = "jpg",
+    quality: int = 90,
+    poll_interval: float = 3.0,
+    max_wait: float = 90.0,
+) -> Optional[str]:
+    """
+    Re-export a saved Canva design via the Connect REST API.
+    Requires CANVA_API_TOKEN set in .env.
+
+    Returns the signed download URL, or None on failure.
+    Note: URL expires ~24h — pipe through media_uploader.py for permanent GHL CDN URL.
+    """
+    token = os.environ.get("CANVA_API_TOKEN")
+    if not token:
+        print("ERROR: CANVA_API_TOKEN not set. Add it to .env.")
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "design_id": design_id,
+        "format": {
+            "type": fmt,
+            "width": width,
+            "height": height,
+            **({"quality": quality} if fmt == "jpg" else {}),
+        },
+    }
+
+    resp = requests.post(f"{CANVA_API_BASE}/exports", json=payload, headers=headers, timeout=30)
+    resp.raise_for_status()
+    job_id = resp.json().get("job", {}).get("id")
+    if not job_id:
+        print(f"[Canva] Export job start failed: {resp.json()}")
+        return None
+
+    elapsed = 0.0
+    while elapsed < max_wait:
+        time.sleep(poll_interval)
+        elapsed += poll_interval
+        status_resp = requests.get(f"{CANVA_API_BASE}/exports/{job_id}", headers=headers, timeout=30)
+        status_resp.raise_for_status()
+        data = status_resp.json().get("job", {})
+        if data.get("status") == "success":
+            urls = data.get("urls", [])
+            return urls[0] if urls else None
+        if data.get("status") == "failed":
+            print(f"[Canva] Export failed for {design_id}")
+            return None
+        print(f"[Canva] Waiting for export... ({elapsed:.0f}s)")
+
+    print(f"[Canva] Timed out after {max_wait}s for {design_id}")
+    return None
 
 
 def print_generation_guide():
