@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from content_generator import generate_weekly_batch, parse_posts_from_batch
 from social_poster import post_content
+from design_library import get_design_url
 
 
 load_dotenv()
@@ -104,7 +105,13 @@ def run_weekly_workflow(dry_run: bool = False) -> None:
 
         for platform in targets:
             caption_trimmed = truncate_for_platform(caption, platform)
+            category = post.get("category", "").lower().strip()
+            image_url = get_design_url(category, platform)
             print(f"\n[Post {i}] → {platform.upper()} ({post.get('category', 'Unknown')})")
+            if image_url:
+                print(f"  Image: {image_url[:80]}{'...' if len(image_url) > 80 else ''}")
+            else:
+                print("  Image: none (text-only post)")
 
             if dry_run:
                 print(f"[DRY RUN] Would post {len(caption_trimmed)} chars to {platform}")
@@ -112,7 +119,7 @@ def run_weekly_workflow(dry_run: bool = False) -> None:
                 results.append({"platform": platform, "status": "dry_run"})
             else:
                 try:
-                    result = post_content(platform, caption_trimmed)
+                    result = post_content(platform, caption_trimmed, image_url=image_url)
                     results.append({"platform": platform, "status": "success", "result": result})
                 except Exception as e:
                     print(f"  ERROR: {e}")

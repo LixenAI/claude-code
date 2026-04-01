@@ -45,6 +45,7 @@ import uvicorn
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+from design_library import get_design_url
 
 load_dotenv()
 
@@ -216,7 +217,12 @@ async def generate_and_post(request: Request):
     )
     content = await call_claude(CONTENT_SYSTEM, user_prompt, max_tokens=2048)
 
-    # Step 2: Post via GHL (run sync call in thread pool)
+    # Step 2: Resolve image — explicit override takes priority, then design library
+    if not media_url:
+        primary_platform = platforms[0] if platforms else "instagram"
+        media_url = get_design_url(category, primary_platform)
+
+    # Step 3: Post via GHL (run sync call in thread pool)
     loop = asyncio.get_event_loop()
     ghl_result = await loop.run_in_executor(
         None, _post_via_ghl, content, platforms, [media_url] if media_url else None
@@ -226,6 +232,7 @@ async def generate_and_post(request: Request):
         "success": True,
         "content": content,
         "platforms": platforms,
+        "image_url": media_url,
         "ghl_post_id": ghl_result.get("id", ghl_result.get("_id")),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
