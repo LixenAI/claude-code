@@ -54,9 +54,12 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
     ("education", "tiktok"):    [],
 
     # ── Social Proof ──────────────────────────────────────────────────────────
-    ("proof", "instagram"):  [],  # TODO: generate via canva_generator.py prompts
-    ("proof", "facebook"):   [],
-    ("proof", "tiktok"):     [],
+    ("proof", "instagram"): [
+        # DAHFnD1qsKU — "Instagram Post - Transforming Communication"
+        "https://export-download.canva.com/1qsKU/DAHFnD1qsKU/-1/0/0001-197531235298946914.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T235203Z&X-Amz-Expires=50485&X-Amz-Signature=598d1b067880d4289c4f584e8f9d916bc0b644aee921facde5b94dafb091c927&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2013%3A53%3A28%20GMT",
+    ],
+    ("proof", "facebook"): [],  # reuse instagram — handled by fallback
+    ("proof", "tiktok"):   [],
 
     # ── Offer ─────────────────────────────────────────────────────────────────
     ("offer", "instagram"): [
@@ -69,9 +72,12 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
     ("offer", "tiktok"):   [],
 
     # ── Engagement ────────────────────────────────────────────────────────────
-    ("engagement", "instagram"): [],  # TODO: generate via canva_generator.py prompts
-    ("engagement", "facebook"):  [],
-    ("engagement", "tiktok"):    [],
+    ("engagement", "instagram"): [
+        # DAHFnASCh7I — "Instagram Post - Missed Calls?"
+        "https://export-download.canva.com/SCh7I/DAHFnASCh7I/-1/0/0001-197531233651858146.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260331%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260331T152419Z&X-Amz-Expires=82502&X-Amz-Signature=44d11fa25301101d7abe2416228202f9c0dec525e54fa86027c41060fa1377bb&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Wed%2C%2001%20Apr%202026%2014%3A19%3A21%20GMT",
+    ],
+    ("engagement", "facebook"): [],  # reuse instagram — handled by fallback
+    ("engagement", "tiktok"):   [],
 }
 
 # ── Canva Design IDs for re-export ────────────────────────────────────────────
@@ -96,6 +102,18 @@ CANVA_DESIGN_IDS: dict[str, dict] = {
         "v2": "DAHFnKpPHmU",   # Book Your Free
         "v3": "DAHFnHsp2dg",   # Unlock Your Spa's Potential
         "v4": "DAHFnK_uyXY",   # Book Your Free Audit
+    },
+    "proof_instagram": {
+        "v1": "DAHFnNXejyM",   # Zero Missed Calls
+        "v2": "DAHFnD1qsKU",   # Transforming Communication
+        "v3": "DAHFnMS7Jjw",   # Elevate Your Med Spa Experience
+        "v4": "DAHFnLZ3j6Q",   # 40% of calls to zero
+    },
+    "engagement_instagram": {
+        "v1": "DAHFnASCh7I",   # Missed Calls?
+        "v2": "DAHFnAI16O4",   # Missed Calls Poll
+        "v3": "DAHFnDXTe6g",   # Count them wisely
+        "v4": "DAHFnDfe438",   # Missed Calls Inquiry
     },
 }
 

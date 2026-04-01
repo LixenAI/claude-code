@@ -74,7 +74,7 @@ GENERATION_PROMPTS: dict[str, dict] = {
         "canva_type": "instagram_post",
         "export_width": 1080,
         "export_height": 1080,
-        "design_ids": [],  # not yet generated
+        "design_ids": ["DAHFnNXejyM", "DAHFnD1qsKU", "DAHFnMS7Jjw", "DAHFnLZ3j6Q"],
     },
     "engagement_instagram": {
         "title": "Engagement — Instagram Post",
@@ -88,7 +88,7 @@ GENERATION_PROMPTS: dict[str, dict] = {
         "canva_type": "instagram_post",
         "export_width": 1080,
         "export_height": 1080,
-        "design_ids": [],  # not yet generated
+        "design_ids": ["DAHFnASCh7I", "DAHFnAI16O4", "DAHFnDXTe6g", "DAHFnDfe438"],
     },
     "pain_tiktok": {
         "title": "Pain Agitation — TikTok / Reel",
