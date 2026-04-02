@@ -40,6 +40,8 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/4237474b-419e-412a-9ad6-b5d1a7d885aa.jpg",
         # DAHFnMJ_rmc — Every Missed Call Is A Missed Booking
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1790c099-28d8-4817-a18b-cb8b035899a9.jpg",
+        # DAHFnLndafM — Missed Calls?
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/d5acb2f6-5f96-4dd9-92cf-77f625980d5f.jpg",
         # DAHFnA4DAgc — Every Missed Call (alt)
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/c6ebf7a2-9e1d-429b-b56b-f07dcbd3290c.jpg",
     ],
@@ -50,6 +52,8 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
     ("education", "facebook"): [
         # DAHFnERvR58 — AI Front Desk Solutions
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/95840971-427c-4d64-af25-a34ec146608f.jpg",
+        # DAHFnCv6O4M — How AI Manages Your Front Desk
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1c1d926b-8556-4871-a3f4-1391071e8ba4.jpg",
         # DAHFnPT5_uE — How AI Enhances Your Front Desk
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1cbb11e4-f1d4-4436-b7f0-5eee99f7e360.jpg",
         # DAHFnNU52sQ — How AI Handles Your Front Desk
@@ -64,6 +68,10 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/fc360560-57e2-4562-a11c-9315473ce587.jpg",
         # DAHFnD1qsKU — Transforming Communication
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/fd2c76d4-cbc2-41aa-b9b9-5d4a87bbdca1.jpg",
+        # DAHFnMS7Jjw — Elevate Your Med Spa Experience
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/3b6d8bd6-1e28-40ba-8103-1b3bbc8e1780.jpg",
+        # DAHFnLZ3j6Q — 40% of calls to zero
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/5f1f5422-63da-475b-8e7a-7a0a38074e09.jpg",
     ],
     ("proof", "facebook"): [],  # reuse instagram — handled by fallback
     ("proof", "tiktok"):   [],
@@ -72,6 +80,10 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
     ("offer", "instagram"): [
         # DAHFnNQ5qCo — Unlock Your Potential (story)
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/9a5e149e-7e6f-4c5e-b372-6078f5331ee0.jpg",
+        # DAHFnKpPHmU — Book Your Free (story)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/c8ad1896-ea8c-4339-962d-8efec6ee8fc5.jpg",
+        # DAHFnHsp2dg — Unlock Your Spa's Potential (story)
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/1116c37c-12dc-41fb-9e6b-a65df1f05f82.jpg",
         # DAHFnK_uyXY — Book Your Free Audit (story)
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/76b65fca-0be6-49f2-a42c-14e78fb9b71e.jpg",
     ],
@@ -84,6 +96,10 @@ DESIGNS: dict[tuple[str, str], list[str]] = {
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/a85ceb48-1289-4be4-916a-41538c2069f2.jpg",
         # DAHFnAI16O4 — Missed Calls Poll
         "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/2084e702-f878-4d54-8eb5-c591e80f4778.jpg",
+        # DAHFnDXTe6g — Count them wisely
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/60cf7126-330d-442d-8cf2-5d779e30a707.jpg",
+        # DAHFnDfe438 — Missed Calls Inquiry
+        "https://assets.cdn.filesafe.space/C7e7ReTQ4FXMZp9TjxzU/media/8fe2a909-9cb0-4607-8dfe-286e1e01bd85.jpg",
     ],
     ("engagement", "facebook"): [],  # reuse instagram — handled by fallback
     ("engagement", "tiktok"):   [],
