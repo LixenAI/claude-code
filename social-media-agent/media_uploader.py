@@ -200,7 +200,7 @@ def run(dry_run: bool = False, force: bool = False) -> None:
         for (cat, plat), urls in new_urls.items():
             if not urls:
                 continue
-            ghl_urls = [u for u in urls if u and "leadconnectorhq" in u or (u and "msgsndr" in u)]
+            ghl_urls = [u for u in urls if u and ("filesafe.space" in u or "leadconnectorhq" in u or "msgsndr" in u)]
             if ghl_urls:
                 print(f'    ("{cat}", "{plat}"): [')
                 for u in urls:

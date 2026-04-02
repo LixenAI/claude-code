@@ -46,6 +46,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from design_library import get_design_url
+from social_poster import post_to_ghl
 
 load_dotenv()
 
@@ -100,49 +101,8 @@ async def call_claude(system: str, user_message: str, max_tokens: int = 1024) ->
 
 def _post_via_ghl(body: str, platforms: list[str], media_urls: list[str] = None) -> dict:
     """Synchronous GHL Social Planner post (called from async context via run_in_executor)."""
-    import requests as req
-
-    GHL_API_BASE = "https://services.leadconnectorhq.com"
-    GHL_API_VERSION = "2021-07-28"
-
-    ACCOUNT_IDS = {
-        "facebook": os.environ.get(
-            "GHL_FB_ACCOUNT_ID",
-            "698afe7a73eafb1d3b1dee6a_C7e7ReTQ4FXMZp9TjxzU_928531400351443_page",
-        ),
-        "instagram": os.environ.get(
-            "GHL_IG_ACCOUNT_ID",
-            "698afe9ddf13cb8b403358b3_C7e7ReTQ4FXMZp9TjxzU_17841408430198402",
-        ),
-        "tiktok": os.environ.get(
-            "GHL_TIKTOK_ACCOUNT_ID",
-            "698bfa551ce275697c2e8aca_C7e7ReTQ4FXMZp9TjxzU_000MKkVmyEEjs3pnDIk6WCPUbxmJe9sHp5_business",
-        ),
-    }
-
-    location_id = os.environ["GHL_LOCATION_ID"]
-    user_id = os.environ.get("GHL_USER_ID", "n0VuVK7uRZWSsQRZDLa8")
-    url = f"{GHL_API_BASE}/social-media-posting/{location_id}/posts"
-    headers = {
-        "Authorization": f"Bearer {os.environ['GHL_API_KEY']}",
-        "Version": GHL_API_VERSION,
-        "Content-Type": "application/json",
-    }
-
-    account_ids = [ACCOUNT_IDS[p.lower()] for p in platforms if p.lower() in ACCOUNT_IDS]
     media = [{"url": u, "type": "Photo"} for u in media_urls] if media_urls else []
-    payload = {
-        "accountIds": account_ids,
-        "type": "post",
-        "media": media,
-        "userId": user_id,
-        "summary": body,
-        "status": "published",
-    }
-
-    response = req.post(url, json=payload, headers=headers, timeout=30)
-    response.raise_for_status()
-    return response.json()
+    return post_to_ghl(body=body, platforms=platforms, media=media)
 
 
 def _send_ghl_message(contact_id: str, message: str, channel: str = "sms") -> dict:
@@ -223,7 +183,7 @@ async def generate_and_post(request: Request):
         media_url = get_design_url(category, primary_platform)
 
     # Step 3: Post via GHL (run sync call in thread pool)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     ghl_result = await loop.run_in_executor(
         None, _post_via_ghl, content, platforms, [media_url] if media_url else None
     )
@@ -288,7 +248,7 @@ async def generate_reply(request: Request):
 
     # Optionally auto-send through GHL
     if auto_send and contact_id:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             send_result = await loop.run_in_executor(
                 None, _send_ghl_message, contact_id, reply, platform
