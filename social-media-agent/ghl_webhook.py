@@ -130,7 +130,7 @@ def _post_via_ghl(body: str, platforms: list[str], media_urls: list[str] = None)
     }
 
     account_ids = [ACCOUNT_IDS[p.lower()] for p in platforms if p.lower() in ACCOUNT_IDS]
-    media = [{"url": u, "type": "image"} for u in media_urls] if media_urls else []
+    media = [{"url": u, "type": "Photo"} for u in media_urls] if media_urls else []
     payload = {
         "accountIds": account_ids,
         "type": "post",

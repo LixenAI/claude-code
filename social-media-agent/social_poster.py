@@ -82,7 +82,10 @@ def post_to_ghl(
     if not account_ids:
         raise ValueError(f"No valid platform account IDs resolved from: {platforms}")
 
-    status = "scheduled" if schedule_date else "published"
+    has_media = bool(media)
+    # GHL rejects external image URLs for published/scheduled in a single call.
+    # Workaround: create as draft first, then PATCH to published/scheduled.
+    status = "draft" if has_media else ("scheduled" if schedule_date else "published")
 
     payload = {
         "accountIds": account_ids,
@@ -93,30 +96,48 @@ def post_to_ghl(
         "status": status,
     }
 
-    if schedule_date:
+    if schedule_date and not has_media:
         payload["scheduleDate"] = schedule_date
 
     response = requests.post(url, json=payload, headers=_ghl_headers(), timeout=30)
     response.raise_for_status()
     result = response.json()
 
+    # Step 2: promote draft to final status when media is attached
+    if has_media:
+        post_data = result.get("results", {}).get("post", result.get("results", {}))
+        post_id = post_data.get("_id")
+        if post_id:
+            final_status = "scheduled" if schedule_date else "published"
+            patch = {"status": final_status}
+            if schedule_date:
+                patch["scheduleDate"] = schedule_date
+            patch_resp = requests.patch(
+                f"{url}/{post_id}", json=patch, headers=_ghl_headers(), timeout=15
+            )
+            if patch_resp.status_code == 200:
+                result["_promoted_to"] = final_status
+            else:
+                print(f"  [GHL] Warning: draft created but promote to {final_status} failed ({patch_resp.status_code})")
+
     post_data = result.get("results", {}).get("post", result.get("results", {}))
     post_id = post_data.get("_id", result.get("id", result.get("traceId", "OK")))
     platform_labels = [PLATFORM_LABELS.get(p.lower(), p) for p in platforms]
+    final_status = result.get("_promoted_to", status)
     print(f"  [GHL ✓] {', '.join(platform_labels)}")
-    print(f"          Status: {status} | Post ID: {post_id}")
+    print(f"          Status: {final_status} | Post ID: {post_id}")
     return result
 
 
 def post_content(platform: str, content: str, image_url: str = None) -> dict:
     """Post to a single platform via GHL."""
-    media = [{"url": image_url, "type": "image"}] if image_url else []
+    media = [{"url": image_url, "type": "Photo"}] if image_url else []
     return post_to_ghl(body=content, platforms=[platform], media=media)
 
 
 def post_to_all_platforms(content: str, image_url: str = None) -> dict:
     """Post the same content to Facebook, Instagram, and TikTok via GHL."""
-    media = [{"url": image_url, "type": "image"}] if image_url else []
+    media = [{"url": image_url, "type": "Photo"}] if image_url else []
     return post_to_ghl(
         body=content,
         platforms=["facebook", "instagram", "tiktok"],
@@ -141,7 +162,7 @@ def schedule_post(
         post_type: "post" | "story" | "reel"
         image_url: Optional public media URL
     """
-    media = [{"url": image_url, "type": "image"}] if image_url else []
+    media = [{"url": image_url, "type": "Photo"}] if image_url else []
     return post_to_ghl(
         body=content,
         platforms=platforms,
