@@ -143,13 +143,66 @@ def find_email_hunter(domain: str) -> dict | None:
 # ── Step 2b: Website scraper fallback ────────────────────────────────────────
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
-SKIP_DOMAINS = {"sentry.io", "wix.com", "squarespace.com", "example.com",
-                "schema.org", "google.com", "facebook.com", "instagram.com"}
+
+SKIP_DOMAINS = {
+    "sentry.io", "sentry-next.wixpress.com", "wixpress.com",
+    "wix.com", "squarespace.com", "example.com", "domain.com",
+    "schema.org", "google.com", "facebook.com", "instagram.com",
+    "yoursite.com", "yourdomain.com", "email.com",
+}
+
+# File extensions that appear in image/asset paths mismatched as emails
+SKIP_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
+                   ".pdf", ".css", ".js", ".woff", ".ttf"}
+
+# TLDs that are never real email TLDs
+FAKE_TLDS = {"jpg", "jpeg", "png", "gif", "svg", "webp", "ico", "pdf",
+             "css", "js", "woff", "ttf", "xml", "json"}
+
 CONTACT_PATHS = ["/contact", "/contact-us", "/about", "/about-us", ""]
 
 
+def is_valid_email(email: str) -> bool:
+    """Return False for obviously fake/junk emails caught by the scraper."""
+    email = email.strip().lstrip("%20").lstrip()  # strip URL-encoded spaces
+
+    parts = email.lower().split("@")
+    if len(parts) != 2:
+        return False
+    local, edomain = parts
+
+    # Reject image/asset filenames in local part
+    if any(local.endswith(ext) for ext in SKIP_EXTENSIONS):
+        return False
+
+    # Reject hex hashes (Sentry IDs etc — 20+ hex chars)
+    if re.fullmatch(r"[0-9a-f]{20,}", local):
+        return False
+
+    # Reject fake TLDs
+    tld = edomain.rsplit(".", 1)[-1] if "." in edomain else ""
+    if tld in FAKE_TLDS:
+        return False
+
+    # Reject malformed domains (e.g. "wellnessintegrative.commailing")
+    # A valid TLD is 2–6 alpha chars
+    if not re.fullmatch(r"[a-z]{2,6}", tld):
+        return False
+
+    # Reject known junk domains
+    if any(skip in edomain for skip in SKIP_DOMAINS):
+        return False
+
+    return True
+
+
+def clean_email(email: str) -> str:
+    """Strip URL encoding and whitespace from a raw scraped email."""
+    return email.strip().lstrip("%20").strip()
+
+
 def scrape_email(website: str, domain: str) -> dict | None:
-    """Try to find a mailto: email on the business website."""
+    """Try to find a real contact email on the business website."""
     if not website:
         return None
 
@@ -163,23 +216,16 @@ def scrape_email(website: str, domain: str) -> dict | None:
             if r.status_code != 200:
                 continue
 
-            # Find all emails in the page HTML
             emails = EMAIL_RE.findall(r.text)
-            for email in emails:
-                parts = email.lower().split("@")
-                if len(parts) != 2:
+            for raw in emails:
+                email = clean_email(raw)
+                if not is_valid_email(email):
                     continue
-                local, edomain = parts
-                # Skip image/asset emails and unrelated domains
-                if any(x in edomain for x in SKIP_DOMAINS):
-                    continue
-                if any(ext in local for ext in [".png", ".jpg", ".gif", ".svg"]):
-                    continue
-                # Prefer email on the same domain
+                edomain = email.lower().split("@")[1]
+                # Prefer email hosted on the same domain
                 if domain.split(".")[0] in edomain or edomain == domain:
                     found_email = email
                     break
-                # Fall back to any real-looking email
                 if not found_email:
                     found_email = email
 
