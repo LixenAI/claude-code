@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+"""
+GHL Lead Generator — Med Spa / Wellness / Spa
+
+Steps:
+  1. Search Google Places for businesses in your target city
+  2. Find emails via Hunter.io domain search
+  3. Push contacts directly into GHL
+
+Requirements in .env:
+  GHL_API_KEY, GHL_LOCATION_ID,
+  GOOGLE_PLACES_API_KEY, HUNTER_API_KEY,
+  TARGET_CITY (e.g. "Miami, FL")
+"""
+
+import os
+import sys
+import time
+import json
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GHL_API_KEY          = os.getenv("GHL_API_KEY")
+GHL_LOCATION_ID      = os.getenv("GHL_LOCATION_ID")
+GOOGLE_API_KEY       = os.getenv("GOOGLE_PLACES_API_KEY")
+HUNTER_API_KEY       = os.getenv("HUNTER_API_KEY")
+TARGET_CITY          = os.getenv("TARGET_CITY", "Miami, FL")
+
+GHL_HEADERS = {
+    "Authorization": f"Bearer {GHL_API_KEY}",
+    "Content-Type":  "application/json",
+    "Version":       "2021-07-28",
+}
+
+SEARCH_TERMS = ["med spa", "wellness center", "day spa", "medical spa"]
+MAX_LEADS    = 100
+
+
+# ── Validation ──────────────────────────────────────────────────────────────
+
+def validate_env():
+    required = {
+        "GHL_API_KEY":           GHL_API_KEY,
+        "GHL_LOCATION_ID":       GHL_LOCATION_ID,
+        "GOOGLE_PLACES_API_KEY": GOOGLE_API_KEY,
+        "HUNTER_API_KEY":        HUNTER_API_KEY,
+    }
+    missing = [k for k, v in required.items() if not v]
+    if missing:
+        print(f"ERROR: Missing credentials: {', '.join(missing)}")
+        print("Re-run setup.sh to enter them.")
+        sys.exit(1)
+
+
+# ── Step 1: Google Places ────────────────────────────────────────────────────
+
+def search_places(query: str) -> list:
+    """Return a list of place dicts for a given search query + city."""
+    url    = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+    params = {"query": f"{query} in {TARGET_CITY}", "key": GOOGLE_API_KEY}
+    places = []
+
+    while True:
+        resp = requests.get(url, params=params, timeout=15)
+        if resp.status_code != 200:
+            print(f"  Google Places error {resp.status_code}: {resp.text[:200]}")
+            break
+
+        data    = resp.json()
+        results = data.get("results", [])
+        places.extend(results)
+
+        next_token = data.get("next_page_token")
+        if not next_token or len(places) >= MAX_LEADS:
+            break
+
+        time.sleep(2)  # Google requires a short wait before next_page_token is valid
+        params = {"pagetoken": next_token, "key": GOOGLE_API_KEY}
+
+    return places
+
+
+def get_place_website(place_id: str) -> str | None:
+    """Fetch website for a place via Place Details API."""
+    url    = "https://maps.googleapis.com/maps/api/place/details/json"
+    params = {"place_id": place_id, "fields": "website,name,formatted_phone_number", "key": GOOGLE_API_KEY}
+    resp   = requests.get(url, params=params, timeout=10)
+    if resp.status_code == 200:
+        return resp.json().get("result", {})
+    return {}
+
+
+def extract_domain(url: str) -> str | None:
+    if not url:
+        return None
+    url = url.replace("https://", "").replace("http://", "").replace("www.", "")
+    return url.split("/")[0].split("?")[0]
+
+
+# ── Step 2: Hunter.io Email Finder ───────────────────────────────────────────
+
+def find_email(domain: str, company_name: str) -> dict | None:
+    """Search Hunter.io for the best email at a domain."""
+    url    = "https://api.hunter.io/v2/domain-search"
+    params = {"domain": domain, "api_key": HUNTER_API_KEY, "limit": 3}
+    resp   = requests.get(url, params=params, timeout=10)
+
+    if resp.status_code != 200:
+        return None
+
+    emails = resp.json().get("data", {}).get("emails", [])
+    if not emails:
+        return None
+
+    # Prefer a named contact over generic emails (info@, hello@, etc.)
+    generic = {"info", "hello", "contact", "support", "admin", "office", "team"}
+    named   = [e for e in emails if e.get("first_name") and e["value"].split("@")[0].lower() not in generic]
+    best    = named[0] if named else emails[0]
+
+    return {
+        "email":      best.get("value"),
+        "first_name": best.get("first_name", ""),
+        "last_name":  best.get("last_name", ""),
+    }
+
+
+# ── Step 3: Push to GHL ──────────────────────────────────────────────────────
+
+def push_to_ghl(contact: dict) -> bool:
+    """Create or update a contact in GHL."""
+    payload = {
+        "locationId": GHL_LOCATION_ID,
+        "email":      contact["email"],
+        "firstName":  contact.get("first_name", ""),
+        "lastName":   contact.get("last_name", ""),
+        "phone":      contact.get("phone", ""),
+        "companyName":contact.get("company", ""),
+        "source":     "lead-gen-script",
+        "tags":       contact.get("tags", []),
+    }
+
+    resp = requests.post(
+        "https://services.leadconnectorhq.com/contacts/",
+        headers=GHL_HEADERS,
+        json=payload,
+        timeout=15,
+    )
+
+    if resp.status_code in (200, 201):
+        return True
+    elif resp.status_code == 422:
+        # Contact already exists — try upsert
+        resp2 = requests.post(
+            "https://services.leadconnectorhq.com/contacts/upsert",
+            headers=GHL_HEADERS,
+            json=payload,
+            timeout=15,
+        )
+        return resp2.status_code in (200, 201)
+    else:
+        print(f"  GHL push failed ({resp.status_code}): {resp.text[:120]}")
+        return False
+
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    validate_env()
+
+    print(f"\nSearching for med spa / wellness leads in: {TARGET_CITY}")
+    print("=" * 60)
+
+    seen_domains = set()
+    leads        = []
+
+    for term in SEARCH_TERMS:
+        if len(leads) >= MAX_LEADS:
+            break
+
+        print(f"\nSearching: '{term}'...")
+        places = search_places(term)
+        print(f"  Found {len(places)} places")
+
+        for place in places:
+            if len(leads) >= MAX_LEADS:
+                break
+
+            place_id = place.get("place_id")
+            name     = place.get("name", "Unknown")
+
+            details = get_place_website(place_id)
+            website = details.get("website")
+            phone   = details.get("formatted_phone_number", "")
+            domain  = extract_domain(website)
+
+            if not domain or domain in seen_domains:
+                continue
+            seen_domains.add(domain)
+
+            print(f"  [{len(leads)+1}] {name} — {domain}", end=" ", flush=True)
+
+            email_info = find_email(domain, name)
+            if not email_info:
+                print("(no email found)")
+                continue
+
+            # Determine which tag applies
+            name_lower = name.lower()
+            if "med spa" in name_lower or "medical spa" in name_lower:
+                tag = "med spa"
+            elif "wellness" in name_lower:
+                tag = "wellness"
+            else:
+                tag = "spa"
+
+            lead = {
+                "company":    name,
+                "email":      email_info["email"],
+                "first_name": email_info["first_name"],
+                "last_name":  email_info["last_name"],
+                "phone":      phone,
+                "tags":       [tag, "email-warmup"],
+                "source":     "lead-gen-script",
+            }
+
+            pushed = push_to_ghl(lead)
+            status = "pushed to GHL" if pushed else "GHL push failed"
+            print(f"→ {email_info['email']} ({status})")
+
+            leads.append(lead)
+            time.sleep(0.5)  # be polite to APIs
+
+    print(f"""
+======================================
+  Done — {len(leads)} leads generated
+======================================
+Contacts are now in GHL tagged with their niche + 'email-warmup'.
+
+Next steps:
+  GHL → Contacts → Smart Lists → + New Smart List
+  Filter: Tags → Contains → email-warmup
+  Name it: TEST - Email Warmup Segment 01
+  Cap at 100 → Save
+
+Then use that Smart List in your email campaign.
+""")
+
+
+if __name__ == "__main__":
+    main()
