@@ -128,8 +128,8 @@ def find_email(domain: str, company_name: str) -> dict | None:
 
 # ── Step 3: Push to GHL ──────────────────────────────────────────────────────
 
-def push_to_ghl(contact: dict) -> bool:
-    """Create or update a contact in GHL."""
+def push_to_ghl(contact: dict) -> str:
+    """Push contact to GHL. Returns 'new', 'exists', or 'failed'."""
     payload = {
         "locationId": GHL_LOCATION_ID,
         "email":      contact["email"],
@@ -149,19 +149,23 @@ def push_to_ghl(contact: dict) -> bool:
     )
 
     if resp.status_code in (200, 201):
-        return True
-    elif resp.status_code == 422:
-        # Contact already exists — try upsert
+        return "new"
+
+    # GHL returns 400 when a duplicate contact exists
+    if resp.status_code == 400 and "duplicated" in resp.text.lower():
+        return "exists"
+
+    # 422 fallback — try upsert
+    if resp.status_code == 422:
         resp2 = requests.post(
             "https://services.leadconnectorhq.com/contacts/upsert",
             headers=GHL_HEADERS,
             json=payload,
             timeout=15,
         )
-        return resp2.status_code in (200, 201)
-    else:
-        print(f"  GHL push failed ({resp.status_code}): {resp.text[:120]}")
-        return False
+        return "new" if resp2.status_code in (200, 201) else "failed"
+
+    return "failed"
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -225,18 +229,23 @@ def main():
                 "source":     "lead-gen-script",
             }
 
-            pushed = push_to_ghl(lead)
-            status = "pushed to GHL" if pushed else "GHL push failed"
+            result = push_to_ghl(lead)
+            if result == "new":
+                status = "pushed to GHL"
+                leads.append(lead)
+            elif result == "exists":
+                status = "already in GHL"
+            else:
+                status = "push failed"
             print(f"→ {email_info['email']} ({status})")
-
-            leads.append(lead)
             time.sleep(0.5)  # be polite to APIs
 
     print(f"""
 ======================================
-  Done — {len(leads)} leads generated
+  Done — {len(leads)} new leads added to GHL
 ======================================
 Contacts are now in GHL tagged with their niche + 'email-warmup'.
+(Contacts that already existed were skipped — not counted above)
 
 Next steps:
   GHL → Contacts → Smart Lists → + New Smart List
