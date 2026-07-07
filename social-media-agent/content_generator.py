@@ -88,19 +88,26 @@ WEEKLY_BATCH_PROMPT = """Create this week's 5 posts — one for each content cat
 Deliver all 5 posts in full, formatted and copy-paste ready."""
 
 
-def generate_post(prompt: str, streaming: bool = True) -> str:
+def generate_post(
+    prompt: str,
+    streaming: bool = True,
+    system_prompt: str = SYSTEM_PROMPT,
+    model: str = "claude-opus-4-6",
+) -> str:
     """
-    Generate a social media post using Claude Opus 4.6 with adaptive thinking.
+    Generate a social media post using Claude with adaptive thinking.
     Uses streaming for long outputs to avoid timeouts.
+    `system_prompt` defaults to the Lixen.AI prompt; pass a brand's
+    prompt to generate for other brands.
     """
     client = anthropic.Anthropic()
 
     if streaming:
         with client.messages.stream(
-            model="claude-opus-4-6",
+            model=model,
             max_tokens=64000,
             thinking={"type": "adaptive"},
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         ) as stream:
             full_text = ""
@@ -110,17 +117,14 @@ def generate_post(prompt: str, streaming: bool = True) -> str:
             print()
             return full_text
     else:
-        response = client.messages.create(
-            model="claude-opus-4-6",
-            max_tokens=16000,
+        with client.messages.stream(
+            model=model,
+            max_tokens=32000,
             thinking={"type": "adaptive"},
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
-        )
-        for block in response.content:
-            if block.type == "text":
-                return block.text
-        return ""
+        ) as stream:
+            return "".join(stream.text_stream)
 
 
 def generate_weekly_batch() -> str:

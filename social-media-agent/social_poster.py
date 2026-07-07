@@ -51,6 +51,7 @@ def post_to_ghl(
     post_type: str = "post",
     schedule_date: str = None,
     media: list[dict] = None,
+    account_ids: dict = None,
 ) -> dict:
     """
     Create a social media post via GHL Social Planner.
@@ -63,6 +64,8 @@ def post_to_ghl(
                        None = publish immediately (status: "published")
         media: List of GHL media objects, e.g. [{"url": "...", "type": "image"}]
                Empty list = text-only post
+        account_ids: Optional {platform: ghl_account_id} map for multi-brand
+                     support; defaults to the module-level Lixen.AI ACCOUNT_IDS
 
     Returns:
         GHL API response dict with post ID inside results.post._id
@@ -71,15 +74,16 @@ def post_to_ghl(
     user_id = os.environ.get("GHL_USER_ID", "n0VuVK7uRZWSsQRZDLa8")
     url = f"{GHL_API_BASE}/social-media-posting/{location_id}/posts"
 
-    account_ids = []
+    id_map = account_ids if account_ids is not None else ACCOUNT_IDS
+    resolved_ids = []
     for platform in platforms:
-        account_id = ACCOUNT_IDS.get(platform.lower().strip())
+        account_id = id_map.get(platform.lower().strip())
         if account_id:
-            account_ids.append(account_id)
+            resolved_ids.append(account_id)
         else:
             print(f"  [GHL] Warning: unknown platform '{platform}', skipping")
 
-    if not account_ids:
+    if not resolved_ids:
         raise ValueError(f"No valid platform account IDs resolved from: {platforms}")
 
     has_media = bool(media)
@@ -88,7 +92,7 @@ def post_to_ghl(
     status = "draft" if has_media else ("scheduled" if schedule_date else "published")
 
     payload = {
-        "accountIds": account_ids,
+        "accountIds": resolved_ids,
         "type": post_type,
         "media": media or [],
         "userId": user_id,
