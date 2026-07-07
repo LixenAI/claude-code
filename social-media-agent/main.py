@@ -40,11 +40,12 @@ Examples:
   python main.py --mode schedule --day wednesday --time 09:30
   python main.py --mode webhook              Start Anthropic→GHL webhook server
   python main.py --mode webhook --port 8080
+  python main.py --mode serve                Unified platform: dashboard + API + scheduler
         """,
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "dry-run", "run-now", "schedule", "webhook"],
+        choices=["setup", "dry-run", "run-now", "schedule", "webhook", "serve"],
         default="dry-run",
         help="Execution mode (default: dry-run)",
     )
@@ -96,6 +97,12 @@ Examples:
     elif args.mode == "webhook":
         print("Mode: WEBHOOK — starting Anthropic → GHL webhook server.\n")
         run_webhook_server(port=args.port)
+
+    elif args.mode == "serve":
+        print("Mode: SERVE — unified platform: API + dashboard + scheduler.\n")
+        import uvicorn
+        port = args.port or int(os.environ.get("WEBHOOK_PORT", 8000))
+        uvicorn.run("app.server:app", host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":

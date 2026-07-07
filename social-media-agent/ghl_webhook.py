@@ -42,7 +42,7 @@ from datetime import datetime, timezone
 
 import anthropic
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import APIRouter, FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from design_library import get_design_url
@@ -50,7 +50,10 @@ from social_poster import post_to_ghl
 
 load_dotenv()
 
-app = FastAPI(title="Lixen.AI GHL Webhook", version="1.0.0")
+# Endpoints live on a router so the unified app (app/server.py) can mount
+# them alongside the new /api routes; the standalone `app` below keeps
+# `python main.py webhook` working unchanged.
+router = APIRouter()
 
 # ── Prompts ──────────────────────────────────────────────────────────────
 
@@ -138,12 +141,12 @@ def _send_ghl_message(contact_id: str, message: str, channel: str = "sms") -> di
 
 # ── Routes ───────────────────────────────────────────────────────────────
 
-@app.get("/health")
+@router.get("/health")
 async def health():
     return {"status": "ok", "service": "lixen-ai-webhook", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
-@app.post("/ghl/generate-and-post")
+@router.post("/ghl/generate-and-post")
 async def generate_and_post(request: Request):
     """
     Generate social media content with Claude and immediately post it
@@ -198,7 +201,7 @@ async def generate_and_post(request: Request):
     }
 
 
-@app.post("/ghl/reply")
+@router.post("/ghl/reply")
 async def generate_reply(request: Request):
     """
     Generate a Claude reply to a contact's inbound message.
@@ -262,7 +265,7 @@ async def generate_reply(request: Request):
     return result
 
 
-@app.post("/ghl/qualify-lead")
+@router.post("/ghl/qualify-lead")
 async def qualify_lead(request: Request):
     """
     Score a lead 1–10 and return a summary + recommended action.
@@ -297,7 +300,7 @@ async def qualify_lead(request: Request):
     return {"success": True, **qualification}
 
 
-@app.post("/ghl/content")
+@router.post("/ghl/content")
 async def generate_content_only(request: Request):
     """
     Generate social media content without posting.
@@ -344,6 +347,11 @@ async def generate_content_only(request: Request):
 
 
 # ── Server ───────────────────────────────────────────────────────────────
+
+# Standalone app for `python main.py webhook` / `python ghl_webhook.py`
+app = FastAPI(title="Lixen.AI GHL Webhook", version="1.0.0")
+app.include_router(router)
+
 
 def run_server(port: int = None):
     port = port or int(os.environ.get("WEBHOOK_PORT", 8000))
